@@ -29,8 +29,8 @@ const textQueryRequestResponse = async (projectId, queryText, languageCode) => {
     return {responses}
 }
 
-const getSessionId = () => {
-    return Math.floor(Math.random(1000)*10000000000).toString('16')
+export const generateOrderId = () => {
+    return Math.floor(Math.random(1000)*10000000000).toString('16').toUpperCase();
 }
 
 export default textQueryRequestResponse

@@ -5,7 +5,7 @@ import cors from "cors";
 import "dotenv/config";
 import "./config/db.mjs";
 import sendMessage from './utiles/whatsappSendMessage.mjs'
-import textQueryRequestResponse from './utiles/DialogflowHelper.mjs'
+import textQueryRequestResponse, {generateOrderId} from './utiles/DialogflowHelper.mjs'
 import { WebhookClient, Card, Suggestion, Image, Payload } from 'dialogflow-fulfillment';
 
 // modals
@@ -205,10 +205,13 @@ app.post("/dialogwebhook", async (req, res) => {
             let cart = await Cart.find({
                 customerEmail:'test@gmail.com'
             }).exec();
+
+            console.log('cart: ', cart)
     
             if (
                 (cart[0]?.items?.length === 0 && cart[0]?.baverages?.length === 0) ||
-                !cart
+                !cart ||
+                cart.length === 0
             ) {
                 agent.add('Your cart is empty.');
             }
@@ -236,6 +239,51 @@ app.post("/dialogwebhook", async (req, res) => {
         agent.add('Are you sure you want to clear your cart?');
     }
 
+    function checkout(agent) {
+        agent.add('Are you sure you want to checkout?');
+    }
+
+    async function checkout_yes(agent) {
+        try {
+            let cart = await Cart.find({customerEmail: "test@gmail.com"})
+            console.log(cart[0])
+
+            if (
+                (cart[0]?.items?.length === 0 && cart[0]?.baverages?.length === 0) ||
+                !cart ||
+                cart.length === 0
+            ) {
+                agent.add('Your cart is empty.');
+                agent.add('Say show menu if you want to see menu');
+                agent.add(new Suggestion('show menu'));
+            }
+            else {
+                let order = new Order({
+                    customerName: cart[0]?.customerName,
+                    customerEmail: cart[0]?.customerEmail,
+                    items: cart[0]?.items,
+                    beverages: cart[0]?.baverages,
+                    orderId: generateOrderId(),
+                })
+                order = await order.save()
+
+                if (order) {
+                    await Cart.deleteOne({customerEmail: "test@gmail.com"})
+                    agent.add('Your order is confirmed.');
+                    agent.add('Thank you for visiting ABC Restaurant.');
+                    agent.add('Say show menu if you want to see menu');
+                    agent.add(new Suggestion('show menu'));
+                }
+
+                else {
+                    agent.add('Something went wrong.');
+                }
+            }
+        }
+        catch(err) {
+            console.log('error2', err)
+        }
+    }
 
     async function clearCart_yes(agent) {
         try {
@@ -273,6 +321,8 @@ app.post("/dialogwebhook", async (req, res) => {
     intentMap.set('coldDrink_yes', coldDrink_yes);
     intentMap.set('clearCart_yes', clearCart_yes);
     intentMap.set('clearCart', clearCart);
+    intentMap.set('checkout', checkout);
+    intentMap.set('checkout_yes', checkout_yes);
 
     agent.handleRequest(intentMap);
 

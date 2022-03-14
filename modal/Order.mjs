@@ -17,6 +17,7 @@ const order = mongoose.Schema({
     ],
     totalBill: {type: Number, default: 0},
     createdOn: { type: Date, default: Date.now },
+    waitingTime: { type: String, default: '0' },
 })
 
 const Order = mongoose.model("order", order)
