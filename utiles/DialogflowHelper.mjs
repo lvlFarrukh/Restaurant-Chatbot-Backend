@@ -30,7 +30,7 @@ const textQueryRequestResponse = async (projectId, queryText, languageCode) => {
 }
 
 export const generateOrderId = () => {
-    return Math.floor(Math.random(1000)*10000000000).toString('16').toUpperCase();
+    return Math.floor(Math.random(1000)*100000000)
 }
 
 export default textQueryRequestResponse

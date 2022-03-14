@@ -7,7 +7,8 @@ import "./config/db.mjs";
 import sendMessage from './utiles/whatsappSendMessage.mjs'
 import textQueryRequestResponse, {generateOrderId} from './utiles/DialogflowHelper.mjs'
 import { WebhookClient, Card, Suggestion, Image, Payload } from 'dialogflow-fulfillment';
-
+import {dialogflow, SignIn} from 'actions-on-google';
+import morgan from 'morgan';
 // modals
 import Order from "./modal/Order.mjs";
 import Cart from "./modal/Cart.mjs";
@@ -15,7 +16,11 @@ import Cart from "./modal/Cart.mjs";
 const app = express();
 const PORT = process.env.PORT || 3001;
 const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+const google_app = dialogflow({
+    clientId: process.env.GOOGLE_CLIENT_ID,
+});
 
+app.use(morgan('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cors({
@@ -77,9 +82,10 @@ app.post("/dialogwebhook", async (req, res) => {
     const agent = new WebhookClient({ request: req, response: res });
 
     //! Wellcome intent
-    // Welcome to ABC Restaurant. I am your virtual assistance. You can ask me about menu.
     function welcome(agent) {
+
         
+
         // let image = new Image("https://media.nationalgeographic.org/assets/photos/000/263/26383.jpg");
         // agent.add(image)
 
@@ -285,6 +291,25 @@ app.post("/dialogwebhook", async (req, res) => {
         }
     }
 
+    async function showOrderStatus(agent) {
+        const slots = agent.parameters;
+        console.log(slots)
+
+        if (slots?.orderId) {
+            let order = await Order.findOne({orderId: slots?.orderId})
+            if (order) {
+                agent.add(`Status of your order is ${order.status}`);
+                order.waitingTime !== '0' && agent.add(`Your order will be delivered in ${order.waitingTime} minutes.`);
+                agent.add('Say show menu if you want to see menu');
+                agent.add(new Suggestion('show menu'));
+            }
+            else {
+                agent.add('Your order is not found.');
+            }
+
+        }
+    }
+
     async function clearCart_yes(agent) {
         try {
             let cart = await Cart.findOneAndUpdate(
@@ -323,6 +348,7 @@ app.post("/dialogwebhook", async (req, res) => {
     intentMap.set('clearCart', clearCart);
     intentMap.set('checkout', checkout);
     intentMap.set('checkout_yes', checkout_yes);
+    intentMap.set('showOrderStatus', showOrderStatus);
 
     agent.handleRequest(intentMap);
 
