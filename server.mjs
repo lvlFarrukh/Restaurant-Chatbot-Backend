@@ -86,7 +86,7 @@ app.post("/dialogwebhook", async (req, res) => {
 
         
 
-        // let image = new Image("https://media.nationalgeographic.org/assets/photos/000/263/26383.jpg");
+        let image = new Image('image-menu');
         // agent.add(image)
 
         // agent.add(` //ssml
